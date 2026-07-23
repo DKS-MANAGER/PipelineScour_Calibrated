@@ -40,23 +40,23 @@ sedimentBedPatches (bottom);
 
 // PHASE 1 (spin-up 0-2s): bedMotion OFF — mesh stays fixed while flow
 // develops. Change to 'on' for Phase 2 (2-45s) restart.
-bedMotion off;
+bedMotion on;
 
 // Euler explicit (order 0): safe for cold start, no dVsed.oldTime() required.
 ABorder 0;
 
 fixedFaPatches (inletFa outletFa);
 
-// SATURATION: 'none' for phase 1 (qb = qsat, no saturation equation).
-// Switch to 'explicit' with Lsat/Tsat for phase 2 (Renaud et al. 2026).
-saturationType none;
+filterShields on;
+
+saturation { type none; }
 
 bedloadModel {
   type Nielsen;
-  alpha 7.2;
+  alpha 32.0;
   aExp 0.5;
   bExp 1;
-  slopeCorrection off;
+  slopeCorrection on;
   gamma 0.1;
   avalanche on;
   Qav 1e-3;
@@ -70,11 +70,16 @@ criticalShieldsModel {
   slopeCorrection on;
 }
 
-morphoAccFactor 4;
+morphoAccFactor 30.0;
+maxDH 1e-4;
 
-filterExner off;
-alphaFiltExner 0.1;
-NfiltExner 1;
+// Suppress downstream deposition mound — only scour is physical in
+// this short-duration experiment. Bed can only move downward.
+noDeposition true;
+
+filterExner on;
+alphaFiltExner 0.05;
+NfiltExner 2;
 
 rigidBed off;
 

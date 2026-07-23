@@ -55,6 +55,9 @@ for i in {0..19}; do
     cp processor$i/0/pointDisplacement processor$i/2/
 done
 
+echo "Applying Phase 2 boundary condition overrides with changeDictionary..."
+mpirun --oversubscribe -np 20 changeDictionary -parallel > log.changeDictionary 2>&1
+
 mpirun --oversubscribe -np 20 $SOLVER -parallel > log.phase2 2>&1
 
 echo "=== Reconstructing results ==="
