@@ -40,7 +40,7 @@ shields0        shields0 [0 0 0 0 0 0 0] 0.0473;
 
 morfac          morfac [0 0 0 0 0 0 0] 1;
 
-CsMax      CsMax [0 0 0 0 0 0 0] 0.6;
+CsMax      CsMax [0 0 0 0 0 0 0] 0.1;
 
 Cs0        Cs0 [0 0 0 0 0 0 0] 0.0;
 
