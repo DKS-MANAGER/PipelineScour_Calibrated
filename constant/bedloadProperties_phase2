@@ -57,7 +57,7 @@ bedloadModel {
   aExp 0.5;
   bExp 1;
   slopeCorrection on;
-  gamma 0.1;
+  gamma 0.4;
   avalanche on;
   Qav 1e-3;
   alphaFiltBeta 0.1;
@@ -78,8 +78,8 @@ maxDH 1e-5;
 noDeposition true;
 
 filterExner on;
-alphaFiltExner 0.05;
-NfiltExner 2;
+alphaFiltExner 0.15;
+NfiltExner 5;
 
 rigidBed off;
 
