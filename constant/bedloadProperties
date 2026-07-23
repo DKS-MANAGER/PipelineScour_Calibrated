@@ -71,7 +71,7 @@ criticalShieldsModel {
 }
 
 morphoAccFactor 30.0;
-maxDH 1e-4;
+maxDH 1e-5;
 
 // Suppress downstream deposition mound — only scour is physical in
 // this short-duration experiment. Bed can only move downward.
