@@ -44,7 +44,8 @@ boundaryField
     }
     bottom
     {
-        type            zeroGradient;
+        type            fixedFluxPressure;
+        value           uniform 0;
     }
     cylinder
     {

@@ -38,3 +38,28 @@ U
         }
     }
 }
+
+p
+{
+    boundaryField
+    {
+        bottom
+        {
+            type            fixedFluxPressure;
+            value           uniform 0;
+        }
+    }
+}
+
+p_rgh
+{
+    boundaryField
+    {
+        bottom
+        {
+            type            fixedFluxPressure;
+            value           uniform 0;
+        }
+    }
+}
+
