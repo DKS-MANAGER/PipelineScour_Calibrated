@@ -35,7 +35,7 @@ motionSolver        displacementLaplacian;
 
 displacementLaplacianCoeffs
 {
-    diffusivity     inverseDistance 2(bottom cylinder);
+    diffusivity     quadratic inverseVolume;
 }
 
 // ************************************************************************* //
