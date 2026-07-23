@@ -1,0 +1,30 @@
+#!/bin/bash
+. /usr/lib/openfoam/openfoam2412/etc/bashrc
+set -e
+
+. "$WM_PROJECT_DIR/bin/tools/RunFunctions"
+
+echo "=== Phase 2 ==="
+# Patch Cs boundary in decomposed directories using changeDictionary
+mpirun --oversubscribe -np 20 changeDictionary -parallel -time 2 > log.changeDictionary 2>&1
+
+# Copy pointDisplacement from time 0 to time 2 in processor directories to initialize motion solver if it exists
+for proc in processor*; do
+    if [ -f "$proc/0/pointDisplacement" ] && [ -d "$proc/2" ]; then
+        cp -f "$proc/0/pointDisplacement" "$proc/2/pointDisplacement"
+    fi
+done
+
+# Swap in the Phase 2 templates
+cp system/controlDict_phase2 system/controlDict
+cp system/dynamicMeshDict constant/dynamicMeshDict
+cp constant/bedloadProperties_phase2 constant/bedloadProperties
+
+mpirun --oversubscribe -np 20 sedExnerFoam -parallel > log.phase2 2>&1
+
+echo "=== Reconstructing results ==="
+reconstructParMesh -latestTime > log.reconstructParMesh 2>&1
+reconstructPar > log.reconstructPar 2>&1
+
+rm -rf processor*
+echo "=== Finished Phase 2 ==="

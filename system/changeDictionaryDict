@@ -1,0 +1,40 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2412                                  |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      changeDictionaryDict;
+}
+
+Cs
+{
+    boundaryField
+    {
+        bottom
+        {
+            type            inletOutlet;
+            phi             phip;
+            inletValue      uniform 0;
+            value           uniform 0;
+        }
+    }
+}
+
+U
+{
+    boundaryField
+    {
+        bottom
+        {
+            type            movingWallVelocity;
+            value           uniform (0 0 0);
+        }
+    }
+}

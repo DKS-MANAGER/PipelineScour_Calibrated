@@ -1,0 +1,64 @@
+#!/bin/bash
+set -e
+
+. "$WM_PROJECT_DIR/bin/tools/RunFunctions"
+
+# Setup Solver Command
+SOLVER=sedExnerFoam
+if ! which $SOLVER >/dev/null 2>&1; then
+    SOLVER=/home/dkslab26/OpenFOAM/dkslab26-v2412/platforms/linux64GccDPInt32Opt/bin/sedExnerFoam
+fi
+
+echo "=== Cleaning old results ==="
+rm -rf processor* VTK log.* postProcessing 0
+find . -maxdepth 1 -regex './[0-9].*' ! -name '0_org' -exec rm -rf {} +
+
+echo "=== Meshing ==="
+blockMesh > log.blockMesh 2>&1
+surfaceFeatureExtract > log.surfaceFeatureExtract 2>&1
+topoSet > log.topoSet 2>&1
+cp system/decomposeParDict.mesh system/decomposeParDict
+decomposePar -force > log.decomposePar.mesh 2>&1
+
+mpirun --oversubscribe -np 20 snappyHexMesh -parallel -overwrite > log.snappyHexMesh 2>&1
+
+reconstructParMesh -constant > log.reconstructParMesh.constant 2>&1
+# rm -rf processor*
+
+echo "=== Finite-area mesh ==="
+extrudeMesh > log.extrudeMesh 2>&1
+topoSet > log.topoSet 2>&1
+makeFaMesh > log.makeFaMesh 2>&1
+
+cp -r 0_org 0
+rm -f 0/cellLevel 0/pointLevel 0/cellDist
+
+cp system/decomposeParDict.run system/decomposeParDict
+decomposePar -force > log.decomposePar.run 2>&1
+
+echo "=== Copying finite-area fields ==="
+./copyFA.sh
+
+echo "=== Phase 1 ==="
+cp system/controlDict_phase1 system/controlDict
+cp constant/dynamicMeshDict_phase1 constant/dynamicMeshDict
+cp constant/bedloadProperties_phase1 constant/bedloadProperties
+mpirun --oversubscribe -np 20 $SOLVER -parallel > log.phase1 2>&1
+
+echo "=== Phase 2 ==="
+cp system/controlDict_phase2 system/controlDict
+cp system/dynamicMeshDict constant/dynamicMeshDict
+cp constant/bedloadProperties_phase2 constant/bedloadProperties
+
+# Copy pointDisplacement from Time 0 to Time 2 to initialize Phase 2 mesh motion
+for i in {0..19}; do
+    cp processor$i/0/pointDisplacement processor$i/2/
+done
+
+mpirun --oversubscribe -np 20 $SOLVER -parallel > log.phase2 2>&1
+
+echo "=== Reconstructing results ==="
+reconstructParMesh -latestTime > log.reconstructParMesh 2>&1
+reconstructPar -latestTime > log.reconstructPar 2>&1
+
+rm -rf processor*

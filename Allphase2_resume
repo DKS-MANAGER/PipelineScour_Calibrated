@@ -1,0 +1,15 @@
+#!/bin/bash
+. /usr/lib/openfoam/openfoam2412/etc/bashrc
+set -e
+
+. "$WM_PROJECT_DIR/bin/tools/RunFunctions"
+
+echo "=== Resuming Phase 2 ==="
+# Ensure correct files are active
+cp system/controlDict_phase2 system/controlDict
+cp constant/bedloadProperties_phase2 constant/bedloadProperties
+
+# Resume Phase 2 from latestTime (2.8s) and append to log.phase2
+mpirun --oversubscribe -np 20 sedExnerFoam -parallel >> log.phase2 2>&1
+
+echo "=== Finished Resumed Phase 2 Run (Reconstruction Deferred) ==="

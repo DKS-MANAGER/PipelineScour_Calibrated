@@ -1,0 +1,42 @@
+#!/bin/bash
+set -e
+
+. "$WM_PROJECT_DIR/bin/tools/RunFunctions"
+
+SOLVER=sedExnerFoam
+if ! which $SOLVER >/dev/null 2>&1; then
+    SOLVER=/home/dkslab26/OpenFOAM/dkslab26-v2412/platforms/linux64GccDPInt32Opt/bin/sedExnerFoam
+fi
+
+echo "=== Resuming directly from Phase 2 ==="
+
+# 1. Kill any running solver instances first
+killall -9 sedExnerFoam mpirun 2>/dev/null || true
+
+# 2. Copy the Phase 2 dictionaries
+echo "Copying Phase 2 dictionaries..."
+cp system/controlDict_phase2 system/controlDict
+cp system/dynamicMeshDict constant/dynamicMeshDict
+cp constant/bedloadProperties_phase2 constant/bedloadProperties
+
+# 3. Re-initialize pointDisplacement for parallel folders
+echo "Initializing pointDisplacement for parallel processors..."
+for i in {0..19}; do
+    cp -f processor$i/0/pointDisplacement processor$i/2/ 2>/dev/null || true
+done
+
+# 4. Clean any partial Phase 2 logs
+rm -f log.phase2
+
+# 5. Launch Phase 2
+echo "Launching Phase 2 in parallel (20 cores)..."
+mpirun --oversubscribe -np 20 $SOLVER -parallel > log.phase2 2>&1
+
+# 6. Reconstruct results
+echo "=== Reconstructing results ==="
+reconstructParMesh -latestTime > log.reconstructParMesh 2>&1
+reconstructPar -latestTime > log.reconstructPar 2>&1
+
+# 7. Clean up processor directories
+rm -rf processor*
+echo "Phase 2 Complete! Results reconstructed."
