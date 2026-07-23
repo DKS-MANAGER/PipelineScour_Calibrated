@@ -30,7 +30,7 @@ application sedExnerFoam;
 startFrom latestTime;
 startTime 0;
 stopAt endTime;
-endTime 35.0;
+endTime 15.0;
 
 deltaT 1e-4;
 
