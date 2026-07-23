@@ -13,7 +13,14 @@ echo "=== Resuming directly from Phase 2 ==="
 # 1. Kill any running solver instances first
 killall -9 sedExnerFoam mpirun 2>/dev/null || true
 
-# 2. Copy the Phase 2 dictionaries
+# 2. Reset time folders to Time = 2.0s (delete any directories > 2)
+echo "Resetting time directories to Time = 2.0s..."
+find . -maxdepth 1 -name '[0-9]*' ! -name '0' ! -name '2' -exec rm -rf {} + 2>/dev/null || true
+for i in {0..19}; do
+    find processor$i -maxdepth 1 -name '[0-9]*' ! -name '0' ! -name '2' -exec rm -rf {} + 2>/dev/null || true
+done
+
+# 3. Copy the Phase 2 dictionaries
 echo "Copying Phase 2 dictionaries..."
 cp system/controlDict_phase2 system/controlDict
 cp system/dynamicMeshDict constant/dynamicMeshDict
