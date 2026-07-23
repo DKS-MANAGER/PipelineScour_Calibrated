@@ -1,0 +1,92 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2412                                  |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+/*---------------------------------------------------------------------------*\
+  Project     : 2D Pipeline Scour Morphodynamics
+  Author      : Divyansh Kumar Singh
+  Level       : Postgraduate Research
+  Description : Simulation of hydrodynamics and morphodynamic scour around
+                a pipeline using the sedExnerFoam solver.
+\*---------------------------------------------------------------------------*/
+// ADAPTED from DKS-MANAGER/2DPipelineScour/0_org/U.b
+// Log-law profile:  u(y) = (u*/κ) × ln(30×(y+0.025)/z₀)
+//   u* = 0.04318 m/s, κ = 0.41, z₀ = 9e-4 m (≈ 2.5×d50)
+// Ramp: (0.1 + 0.9×t/4) for t ≤ 4s to avoid impulsive start.
+// Sub-bed faces (y < −0.025) get (0 0 0).
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volVectorField;
+    location    "0";
+    object      U;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [0 1 -1 0 0 0 0];
+
+internalField   uniform (0 0 0);
+
+boundaryField
+{
+    inlet
+    {
+        type            codedFixedValue;
+        value           uniform (0 0 0);
+        name            logLawInlet;
+        code
+        #{
+            const fvPatch& boundaryPatch = patch();
+            const vectorField& Cf = boundaryPatch.Cf();
+            vectorField& field = *this;
+            scalar t = this->db().time().value();
+            forAll(Cf, faceI)
+            {
+                if (Cf[faceI].y() >= -0.025)
+                {
+                    scalar ramp = (t <= 4.0) ? (0.1 + 0.9*(t/4.0)) : 1.0;
+                    field[faceI] = ramp * vector(
+                        (0.04318/0.41)
+                        * Foam::log(30.0*(Cf[faceI].y() + 0.025)/9e-4),
+                        0, 0);
+                }
+                else
+                {
+                    field[faceI] = vector(0, 0, 0);
+                }
+            }
+        #};
+    }
+    outlet
+    {
+        type            inletOutlet;
+        inletValue      uniform (0 0 0);
+        value           uniform (0 0 0);
+    }
+    surface
+    {
+        type            symmetryPlane;
+    }
+    bottom
+    {
+        type            noSlip;
+    }
+    cylinder
+    {
+        type            noSlip;
+    }
+    lateralfront
+    {
+        type            empty;
+    }
+    lateralback
+    {
+        type            empty;
+    }
+}
+
+// ************************************************************************* //

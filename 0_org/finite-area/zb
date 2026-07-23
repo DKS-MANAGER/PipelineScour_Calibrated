@@ -1,0 +1,53 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2412                                  |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+/*---------------------------------------------------------------------------*\
+  Project     : 2D Pipeline Scour Morphodynamics
+  Author      : Divyansh Kumar Singh
+  Level       : Postgraduate Research
+  Description : Simulation of hydrodynamics and morphodynamic scour around
+                a pipeline using the sedExnerFoam solver.
+\*---------------------------------------------------------------------------*/
+// zb: bed elevation relative to datum [m].
+// internalField set to 0 (flat bed at datum). Was -0.025 which drove
+// spurious mesh motion on step 1 before any sediment transport occurred.
+// The FA solver will evolve zb from this flat initial state.
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       areaScalarField;
+    location    "0/finite-area";
+    object      zb;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [0 1 0 0 0 0 0];
+
+internalField   uniform 0;
+
+boundaryField
+{
+    inletFa
+    {
+        type            zeroGradient;
+    }
+    outletFa
+    {
+        type            zeroGradient;
+    }
+    lateralfrontFa
+    {
+        type            empty;
+    }
+    lateralbackFa
+    {
+        type            empty;
+    }
+
+}
+// ************************************************************************* //

@@ -1,0 +1,94 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2412                                  |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+/*---------------------------------------------------------------------------*\
+  Project     : 2D Pipeline Scour Morphodynamics
+  Author      : Divyansh Kumar Singh
+  Level       : Postgraduate Research
+  Description : Simulation of hydrodynamics and morphodynamic scour around
+                a pipeline using the sedExnerFoam solver.
+\*---------------------------------------------------------------------------*/
+// ADAPTED from DKS-MANAGER/2DPipelineScour/0_org/omega.b
+// Coded inlet: omega = 100*sqrt(k)/(Cmu*Lt*Lref)
+//   where Cmu=0.09, Lt=0.1, Lref=0.23, k = ramped as in k file.
+//   At steady state (k=8.7e-5): omega ≈ 450 s⁻¹.
+//   Sub-bed (y < -0.024): omega = 1000 s⁻¹ (high dissipation).
+// Cylinder: rough-wall omegaWallFunction with kn=0.536e-5 (SedFoam ref).
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    location    "0";
+    object      omega;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [0 0 -1 0 0 0 0];
+
+internalField   uniform 10;
+
+boundaryField
+{
+    inlet
+    {
+        type            codedFixedValue;
+        value           uniform 10;
+        name            omegaInlet;
+        code
+        #{
+            const fvPatch& boundaryPatch = patch();
+            const vectorField& Cf = boundaryPatch.Cf();
+            scalarField& field = *this;
+            scalar t = this->db().time().value();
+            forAll(Cf, faceI)
+            {
+                if (Cf[faceI].y() >= -0.024)
+                {
+                    scalar kval = (t <= 4.0)
+                        ? (t/4.0)*(t/4.0)*8.7e-5
+                        : 8.7e-5;
+                    field[faceI] = 100.0*Foam::sqrt(kval)
+                                   / (0.09*0.1*0.23);
+                }
+                else
+                {
+                    field[faceI] = 1000.0;
+                }
+            }
+        #};
+    }
+    outlet
+    {
+        type            zeroGradient;
+    }
+    surface
+    {
+        type            symmetryPlane;
+    }
+    bottom
+    {
+        type            omegaWallFunction;
+        value           uniform 10;
+    }
+    cylinder
+    {
+        type            omegaWallFunction;
+        value           uniform 10;
+        kn              0.536e-5;
+    }
+    lateralfront
+    {
+        type            empty;
+    }
+    lateralback
+    {
+        type            empty;
+    }
+}
+
+// ************************************************************************* //

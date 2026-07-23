@@ -1,0 +1,81 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2412                                  |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+/*---------------------------------------------------------------------------*\
+  Project     : 2D Pipeline Scour Morphodynamics
+  Author      : Divyansh Kumar Singh
+  Level       : Postgraduate Research
+  Description : Simulation of hydrodynamics and morphodynamic scour around
+                a pipeline using the sedExnerFoam solver.
+\*---------------------------------------------------------------------------*/
+// ADAPTED from DKS-MANAGER/2DPipelineScour/0_org/k.b
+// Ramped k inlet: k = (t/4)² × 8.7e-5  for t≤4s, then steady 8.7e-5.
+// internalField = 1e-6 (matching SedFoam reference, not 1e-3).
+// Wall values = 2.5e-3 (matching SedFoam reference).
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    location    "0";
+    object      k;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [0 2 -2 0 0 0 0];
+
+internalField   uniform 1e-6;
+
+boundaryField
+{
+    inlet
+    {
+        type            codedFixedValue;
+        value           uniform 1e-6;
+        name            kInlet;
+        code
+        #{
+            scalarField& field = *this;
+            scalar t = this->db().time().value();
+            scalar kval = (t <= 4.0)
+                ? (t/4.0)*(t/4.0)*8.7e-5
+                : 8.7e-5;
+            forAll(field, faceI)
+            {
+                field[faceI] = kval;
+            }
+        #};
+    }
+    outlet
+    {
+        type            zeroGradient;
+    }
+    surface
+    {
+        type            symmetryPlane;
+    }
+    bottom
+    {
+        type            kqRWallFunction;
+        value           uniform 2.5e-3;
+    }
+    cylinder
+    {
+        type            kqRWallFunction;
+        value           uniform 2.5e-3;
+    }
+    lateralfront
+    {
+        type            empty;
+    }
+    lateralback
+    {
+        type            empty;
+    }
+}
+
+// ************************************************************************* //

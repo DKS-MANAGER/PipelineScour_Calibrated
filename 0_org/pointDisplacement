@@ -1,0 +1,71 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2412                                  |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+/*---------------------------------------------------------------------------*\
+  Project     : 2D Pipeline Scour Morphodynamics
+  Author      : Divyansh Kumar Singh
+  Level       : Postgraduate Research
+  Description : Simulation of hydrodynamics and morphodynamic scour around
+                a pipeline using the sedExnerFoam solver.
+\*---------------------------------------------------------------------------*/
+// Phase 1: staticFvMesh - pointDisplacement not used by solver.
+// Phase 2: dynamicMotionSolverFvMesh reads this field.
+//   bottom: driven by exnerEqn (fixedNormalSlip with n=(0 1 0))
+//   cylinder: fixedValue zero (rigid pipeline never moves)
+//   inlet/outlet/surface: fixedValue zero (domain boundaries fixed)
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       pointVectorField;
+    location    "0";
+    object      pointDisplacement;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [0 1 0 0 0 0 0];
+
+internalField   uniform (0 0 0);
+
+boundaryField
+{
+    inlet
+    {
+        type            fixedValue;
+        value           uniform (0 0 0);
+    }
+    outlet
+    {
+        type            fixedValue;
+        value           uniform (0 0 0);
+    }
+    surface
+    {
+        type            fixedValue;
+        value           uniform (0 0 0);
+    }
+    bottom
+    {
+        type            fixedValue;
+        value           uniform (0 0 0);
+    }
+    cylinder
+    {
+        type            fixedValue;
+        value           uniform (0 0 0);
+    }
+    lateralfront
+    {
+        type            empty;
+    }
+    lateralback
+    {
+        type            empty;
+    }
+}
+
+// ************************************************************************* //
