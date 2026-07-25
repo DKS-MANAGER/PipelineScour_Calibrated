@@ -70,8 +70,8 @@ criticalShieldsModel {
   slopeCorrection on;
 }
 
-morphoAccFactor 30.0;
-maxDH 1e-5;
+morphoAccFactor 2.0;
+maxDH 5e-6;
 
 // Suppress downstream deposition mound — only scour is physical in
 // this short-duration experiment. Bed can only move downward.
@@ -79,7 +79,7 @@ noDeposition true;
 
 filterExner on;
 alphaFiltExner 0.15;
-NfiltExner 5;
+NfiltExner 15;
 
 rigidBed off;
 

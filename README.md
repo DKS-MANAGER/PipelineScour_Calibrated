@@ -155,6 +155,18 @@ If you are moving this simulation to a high-performance workstation or cluster a
   3. Enforced **`inverseDistance 2(bottom cylinder);`** to keep cells in the high-shear pipeline gap rigid.
   4. Updated **`RunPhase2`** to purge all intermediate directories $> 2.0\text{s}$ prior to launch, ensuring a clean restart from the end of Phase 1.
 
+### R. Permanent Stability Fix for Dynamic Mesh & Morphodynamics (PIMPLE Coupling)
+- **The Issue:** The simulation suffered from recurring Floating Point Exception (SIGFPE) crashes at CFD time `Time ≈ 2.6s` to `4.9s`. Detailed debugging revealed a dual-instability mechanism:
+  1. *Explicit Coupling Lag:* Because `nOuterCorrectors` was default-unset (`1`), the solver calculated velocity on the old grid, moved the grid to the new position, and immediately advanced to the next time step. This decoupling generated an *odd-even Shields number oscillation* (spiking between `0.7` and `2.1` on alternate steps) that rapidly warped the grid.
+  2. *Stiffness Mismatch:* The volume-based diffusivity (`inverseVolume`) made the tiny boundary-layer cells extremely stiff compared to core cells. This forced the boundary layer to shear horizontally rather than deforming vertically, leading to grid skewness and singular matrices during the wall distance (`yWall` via `GAMG`) solve.
+- **The Fixes:**
+  1. Set **`nOuterCorrectors 3;`** in `system/fvSolution` to iteratively converge and align the flow field with the mesh motion within the same timestep.
+  2. Tightened correctors (`nCorrectors 3;` and `nNonOrthogonalCorrectors 3;`) to improve pressure calculations on the deforming grid.
+  3. Set `cellDisplacement` under-relaxation to `1.0` in `relaxationFactors` to eliminate artificial mesh-motion lag.
+  4. Increased **`NfiltExner` to `15`** in `constant/bedloadProperties_phase2` to filter high-frequency numerical spatial noise from the bed profile.
+  5. Reverted to **`inverseDistance 2(bottom cylinder);`** mesh motion diffusivity, allowing both fine and coarse cells to deform proportionally according to wall distance.
+  6. Configured **`maxCo 2.0;`** and **`endTime 52.0;`** (paired with **`morphoAccFactor 2.0;`**) to double the hydrodynamic stability margin and complete the full 100s of physical scour with absolute stability.
+
 ---
 
 ## 🚀 4. Automated 2-Phase Simulation Workflow (20-Core MPI)
@@ -175,13 +187,14 @@ The `Allrun` script orchestrates the computational setup, while the Phase 2 morp
 - **Settings:** `morphoAccFactor = 0.005`, `avalanche = off`.
 - **Purpose:** Artificially slows down the morphodynamic time-scale by 200x, allowing the Navier-Stokes velocity and pressure fields to fully develop and stabilize through the gap *without* the erodible bed deforming prematurely.
 
-### Phase 2: Morphodynamic Scour ($t = 2.0\text{s} \rightarrow 4.0\text{s}$)
-- **Settings:** `morphoAccFactor = 50.0`, `avalanche = on`, `alpha = 32.0` (calibrated Nielsen bedload coefficient), `saturationType = none` (instantaneous pickup).
-- **Purpose:** Speeds up the bed morphodynamics by **50x** to allow fast execution and direct validation against the 100s experimental equilibrium profile of Mao (1986). Under this acceleration, $2.0\text{ s}$ of CFD solver time (from $T = 2.0\text{ s}$ to $T = 4.0\text{ s}$) corresponds to $100.0\text{ s}$ of morphological scour. Thanks to mesh optimization, this completes in **~1.5 hours** of wall-clock time.
-- **Stabilization Features:** To eliminate unphysical wiggles while preserving the $-33.5\text{ mm}$ peak scour depth:
+### Phase 2: Morphodynamic Scour ($t = 2.0\text{s} \rightarrow 52.0\text{s}$)
+- **Settings:** `morphoAccFactor = 2.0`, `avalanche = on`, `alpha = 32.0` (calibrated Nielsen bedload coefficient), `saturationType = none` (instantaneous pickup).
+- **Purpose:** Speeds up the bed morphodynamics by **2x** to allow direct validation against the 100s experimental equilibrium profile of Mao (1986). Under this acceleration, $50.0\text{ s}$ of CFD solver time (from $T = 2.0\text{ s}$ to $T = 52.0\text{ s}$) corresponds to $100.0\text{ s}$ of morphological scour.
+- **Stabilization Features:** To eliminate unphysical wiggles and prevent cell collapse:
   * `slopeCorrection on` inside the bedload model (gravity-induced bed stabilization).
   * `filterShields on` (spatial smoothing of local shear stresses).
-  * `filterExner on` with `NfiltExner = 2` and `alphaFiltExner = 0.05` (finely tuned, low-damping bed elevation filter).
+  * `filterExner on` with `NfiltExner = 15` and `alphaFiltExner = 0.15` (stronger bed elevation filter to damp spatial decoupling).
+  * `nOuterCorrectors = 3` inside PIMPLE (iterative flow-mesh coupling).
 
 ---
 

@@ -169,8 +169,9 @@ solvers
 
 PIMPLE
 {
-    nCorrectors              2;
-    nNonOrthogonalCorrectors 2;
+    nOuterCorrectors         3;
+    nCorrectors              3;
+    nNonOrthogonalCorrectors 3;
     pRefCell                 0;
     pRefValue                0;
 
@@ -195,7 +196,7 @@ relaxationFactors
         k               0.5;        // tightened from 0.7
         omega           0.5;        // tightened from 0.7
         Cs              0.3;        // tightened from 0.5 — this is the critical one
-        cellDisplacement 0.5;
+        cellDisplacement 1.0;
     }
 }
 

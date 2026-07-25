@@ -3,10 +3,7 @@ set -e
 
 . "$WM_PROJECT_DIR/bin/tools/RunFunctions"
 
-SOLVER=sedExnerFoam
-if ! which $SOLVER >/dev/null 2>&1; then
-    SOLVER=/home/dkslab26/OpenFOAM/dkslab26-v2412/platforms/linux64GccDPInt32Opt/bin/sedExnerFoam
-fi
+SOLVER=/home/dkslab26/OpenFOAM/dkslab26-v2412/platforms/linux64GccDPInt32Opt/bin/sedExnerFoam
 
 echo "=== Resuming directly from Phase 2 ==="
 
