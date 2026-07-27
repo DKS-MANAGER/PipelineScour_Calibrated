@@ -147,13 +147,14 @@ If you are moving this simulation to a high-performance workstation or cluster a
 - **The Issue:** Specifying `inverseDistance 1 (bottom cylinder)` caused the solver to crash with `Expected a ')' or a '}' while reading List, found word 'cylinder'` because OpenFOAM parsed `1` as the list size and threw an error when encountering a second patch.
 - **The Fix:** Changed the syntax in [dynamicMeshDict](file:///F:/CFD/PipelineScour_Calibrated/system/dynamicMeshDict) to the correct OpenFOAM list structure: `diffusivity inverseDistance 2(bottom cylinder);` (where `2(bottom cylinder)` denotes a list of size 2, and the omitted prefix defaults the exponent to 1).
 
-### Q. Stabilization of Phase 2 Moving Boundary Coupling (fixedFluxPressure & maxDH)
-- **The Issue:** Even with `movingWallVelocity` enabled on the moving bed, the pressure solver struggled and diverged (residuals reaching $10^{55}$) under rapid bed deformation. Furthermore, the `maxDH` parameter was set to `1e-4` ($0.1\text{ mm}$), allowing cells to expand by 40% of their height in a single timestep on the highly refined Level-3 grid (cell height $\approx 0.25\text{ mm}$). Finally, `inverseVolume` diffusivity allowed cells in the narrow $11\text{ mm}$ pipeline gap to warp, while residual folders from crashed runs corrupted subsequent restarts.
+### Q. Stabilization of Phase 2 Moving Boundary Coupling (fixedFluxPressure & maxDH/alpha Bounding)
+- **The Issue:** Under large bed deformations, the simulation originally suffered from unphysical over-erosion and grid-velocity shock at `Time = 2.53s`. Setting `alpha = 32.0` caused excessive bedload flux, deforming the bed by the maximum allowable limit (`maxDH = 1e-4` m) on every step. At $\Delta t \approx 7 \times 10^{-4}$ s, this created a vertical grid movement velocity of $0.15\text{ m/s}$. For $0.47\text{ mm}$ boundary layer cells, this sudden mesh motion acted as a massive numerical pump, distorting the boundary layer flow, spiking the Shields number to the cap of `10.0`, and rapidly collapsing the cells (causing Courant numbers to spike to `6336.5` and freezing the solver).
 - **The Fixes:**
   1. Configured the moving bed patch (`bottom`) to use **`fixedFluxPressure`** for `p` and `p_rgh`, balancing pressure gradients with boundary acceleration to preserve normal momentum.
-  2. Set **`maxDH 1e-5;`** in `bedloadProperties_phase2` to cap single-step grid stretching to a safe 4% of cell height.
-  3. Enforced **`inverseDistance 2(bottom cylinder);`** to keep cells in the high-shear pipeline gap rigid.
-  4. Updated **`RunPhase2`** to purge all intermediate directories $> 2.0\text{s}$ prior to launch, ensuring a clean restart from the end of Phase 1.
+  2. Restored **`alpha 12.0`** (the standard physical Nielsen bedload coefficient) to ensure the Exner equation computes a natural, physical erosion rate.
+  3. Set **`maxDH 1.5e-5;`** in `bedloadProperties_phase2` to cap single-step grid stretching to a safe 3% of cell height, limiting boundary grid velocities to a gentle $0.02\text{ m/s}$.
+  4. Enforced **`inverseDistance 2(bottom cylinder);`** to keep cells in the high-shear pipeline gap rigid.
+  5. Updated **`RunPhase2`** to purge all intermediate directories $> 2.0\text{s}$ prior to launch, ensuring a clean restart from the end of Phase 1.
 
 ### R. Permanent Stability Fix for Dynamic Mesh & Morphodynamics (PIMPLE Coupling)
 - **The Issue:** The simulation suffered from recurring Floating Point Exception (SIGFPE) crashes at CFD time `Time ≈ 2.6s` to `4.9s`. Detailed debugging revealed a dual-instability mechanism:
@@ -188,7 +189,7 @@ The `Allrun` script orchestrates the computational setup, while the Phase 2 morp
 - **Purpose:** Artificially slows down the morphodynamic time-scale by 200x, allowing the Navier-Stokes velocity and pressure fields to fully develop and stabilize through the gap *without* the erodible bed deforming prematurely.
 
 ### Phase 2: Morphodynamic Scour ($t = 2.0\text{s} \rightarrow 52.0\text{s}$)
-- **Settings:** `morphoAccFactor = 2.0`, `avalanche = on`, `alpha = 32.0` (calibrated Nielsen bedload coefficient), `saturationType = none` (instantaneous pickup).
+- **Settings:** `morphoAccFactor = 2.0`, `avalanche = on`, `alpha = 12.0` (standard physical Nielsen bedload coefficient), `saturationType = none` (instantaneous pickup).
 - **Purpose:** Speeds up the bed morphodynamics by **2x** to allow direct validation against the 100s experimental equilibrium profile of Mao (1986). Under this acceleration, $50.0\text{ s}$ of CFD solver time (from $T = 2.0\text{ s}$ to $T = 52.0\text{ s}$) corresponds to $100.0\text{ s}$ of morphological scour.
 - **Stabilization Features:** To eliminate unphysical wiggles and prevent cell collapse:
   * `slopeCorrection on` inside the bedload model (gravity-induced bed stabilization).
