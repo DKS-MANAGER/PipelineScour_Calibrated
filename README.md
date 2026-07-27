@@ -136,8 +136,8 @@ If you are moving this simulation to a high-performance workstation or cluster a
   3. Increased `minDeltaT` to `1e-5` for a proactive safety freeze of morphodynamics.
 
 ### N. Suppressing Downstream Sediment Mound (`noDeposition`)
-- **The Issue:** Explicit bed morphodynamics can cause sediment to pile up behind the pipeline in an unphysical mound during short-duration tests, introducing additional flow shear and grid instability.
-- **The Fix:** Patched `createFaFields.H` and `exnerEqn.H` to add a new `noDeposition` boolean flag (read from `bedloadProperties`). When `noDeposition true;` is enabled, the Exner solver clamps positive $dH$ values to zero, suppressing downstream sediment accumulation while allowing scour (negative $dH$) to continue naturally. The solver was successfully compiled via `Allwmake` in `~/sedExnerFoam`.
+- **The Issue:** Explicit bed morphodynamics can cause sediment to pile up behind the pipeline in an unphysical mound. While setting `noDeposition true;` suppresses this mound, under live-bed conditions ($\theta_{\infty} \approx 0.32 > \theta_{cr} = 0.047$), it prevents eroded sand from depositing downstream. This breaks sediment mass conservation and creates a continuous sediment deficit that propagates downstream, eventually sinking the entire bed to the mesh bottom boundary ($-120\text{ mm}$).
+- **The Fix:** Set `noDeposition false;` in `constant/bedloadProperties`. Under `zeroGradient` inlet boundary conditions, this conserves sediment mass and keeps the free-stream bed level stable at $y = -0.026\text{ m}$ while allowing the scour hole and downstream dune to develop physically.
 
 ### O. Bypassing Setup Redundancies on Phase 2 Crash (`RunPhase2`)
 - **The Issue:** When Phase 2 crashed due to numerical or syntax issues, running the standard `./Allrun` script cleaned the directory and forced a redundant 8-minute rebuild of the mesh and Phase 1 spin-up from scratch.

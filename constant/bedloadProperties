@@ -75,7 +75,7 @@ maxDH 1.5e-5;
 
 // Suppress downstream deposition mound — only scour is physical in
 // this short-duration experiment. Bed can only move downward.
-noDeposition true;
+noDeposition false;
 
 filterExner on;
 alphaFiltExner 0.15;
